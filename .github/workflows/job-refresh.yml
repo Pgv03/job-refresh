@@ -1,10 +1,6 @@
 name: Job refresh
 
 on:
-  schedule:
-    # GitHub cron is in UTC. IST = UTC+5:30, so:
-    #   00:00 IST = 18:30 UTC | 10:00 IST = 04:30 UTC | 17:00 IST = 11:30 UTC
-    - cron: "30 18,4,11 * * *"
   workflow_dispatch:   # lets you run it manually from the Actions tab to test
 
 permissions:
