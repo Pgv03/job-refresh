@@ -1,0 +1,47 @@
+name: Job refresh
+
+on:
+  schedule:
+    # GitHub cron is in UTC. IST = UTC+5:30, so:
+    #   00:00 IST = 18:30 UTC | 10:00 IST = 04:30 UTC | 17:00 IST = 11:30 UTC
+    - cron: "30 18,4,11 * * *"
+  workflow_dispatch:   # lets you run it manually from the Actions tab to test
+
+permissions:
+  contents: write      # needed to commit the updated Excel file
+
+concurrency:
+  group: job-refresh   # never run two refreshes at once
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Run job refresh
+        env:
+          FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
+          TRACKER_PATH: Job_Tracker_Mumbai_Java.xlsx
+        run: python job_refresh.py
+
+      - name: Commit updated tracker
+        run: |
+          git config user.name "job-refresh-bot"
+          git config user.email "job-refresh-bot@users.noreply.github.com"
+          git add Job_Tracker_Mumbai_Java.xlsx
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Job refresh $(date -u +'%Y-%m-%d %H:%M UTC')"
+            git push
+          fi
